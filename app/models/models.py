@@ -88,6 +88,7 @@ class Incident(Base):
     confidence_score = Column(Float)
     status = Column(String)
     summary_json = Column(String) # For caching LLM output
+    reasoning_trace_json = Column(String)
     created_at = Column(DateTime)
 
 

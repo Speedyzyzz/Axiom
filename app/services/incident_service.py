@@ -26,19 +26,12 @@ def get_incident_with_timeline(db: Session, incident_id: int) -> dict:
     if not incident:
         raise IncidentNotFound(incident_id)
         
-    # If summary is not pre-computed, compute it now and save (e.g., for legacy incidents)
+    # If summary is not pre-computed, compute it now and save
     if not incident.summary_json:
         generate_investigation_summary(db, incident.id)
         incident = db.query(models.Incident).filter(models.Incident.id == incident_id).first()
 
-    summary_data = json.loads(incident.summary_json) if incident.summary_json else {}
-    
-    # Fetch timeline
-    timeline_events = build_ordered_timeline(db, incident.id)
-    
-    # Embed timeline
-    summary_data["timeline"] = timeline_events
-    return summary_data
+    return json.loads(incident.summary_json) if incident.summary_json else {}
 
 def take_action_on_incident(db: Session, incident_id: int, action: str):
     """Update the status of an incident."""

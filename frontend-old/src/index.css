@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0B0F14;
+    @apply font-body-md text-body-md text-[#F5F3EE] antialiased;
+  }
+}
+
+@layer utilities {
+  .border-system { border-color: #1C232D; }
+  .bg-system-surface { background-color: #10161D; }
+  .text-system-muted { color: #8A8F98; }
+  .text-system-light { color: #F5F3EE; }
+  .bg-system-critical { background-color: rgba(212, 69, 58, 0.1); border-color: #D4453A; }
+  .text-system-critical { color: #D4453A; }
+}
+
+@keyframes slideInAlert {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes flashBackground {
+  0% {
+    background-color: rgba(212, 69, 58, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes crossFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

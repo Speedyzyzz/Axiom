@@ -52,10 +52,12 @@ def run_seed():
         db.add(db_access)
         db.commit()
 
-        # 09:48 Beneficiary Added
+        # 09:48 Beneficiaries Added (3)
         t5 = datetime(2024, 1, 1, 9, 48, 0)
         b1 = models.Beneficiary(customer_account_id=customer.id, beneficiary_name="Alexander Volkov", beneficiary_account="ACC-RU-88910", added_by_user_id=employee.id, added_at=t5)
-        db.add(b1)
+        b2 = models.Beneficiary(customer_account_id=customer.id, beneficiary_name="Dmitry Ivanov", beneficiary_account="ACC-RU-88911", added_by_user_id=employee.id, added_at=t5 + timedelta(seconds=10))
+        b3 = models.Beneficiary(customer_account_id=customer.id, beneficiary_name="Sergei Petrov", beneficiary_account="ACC-RU-88912", added_by_user_id=employee.id, added_at=t5 + timedelta(seconds=20))
+        db.add_all([b1, b2, b3])
         db.commit()
 
         # 09:50 Transfer

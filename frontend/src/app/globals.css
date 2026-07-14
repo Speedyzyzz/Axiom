@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand Specific */
+  --color-background: #050816;
+  --color-surface: #0F172A;
+  
+  --color-card: #111827;
+  --color-card-foreground: #FFFFFF;
+  
+  --color-border: #1E293B; /* Subtle border for dark mode */
+  
+  /* Accent & Semantic */
+  --color-primary: #00E5FF; 
+  --color-primary-foreground: #050816;
+  
+  --color-secondary: #7C3AED;
+  
+  --color-success: #22C55E; 
+  --color-danger: #EF4444; 
+  --color-warning: #F59E0B; 
+  
+  --color-heading: #FFFFFF;
+  --color-body: #94A3B8; /* Slate 400 */
+  --color-muted: #475569; /* Slate 600 */
+
+  /* Enforce Inter globally */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-heading);
+    font-family: var(--font-sans);
+  }
+}
+
+/* Custom Scrollbar for Dark Mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Lenis Smooth Scroll Recommended CSS */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
