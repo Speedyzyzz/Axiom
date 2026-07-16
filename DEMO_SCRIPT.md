@@ -1,28 +1,42 @@
 # AttackChain AI Demo Script
 
-**0:00 Landing**
-> "Hello. Today, security analysts investigate alerts. We investigate attacks. AttackChain AI is an enterprise investigation platform that reconstructs multi-stage cyber attacks into explainable, actionable incidents."
+## The Hook (Problem & Solution)
+> "A SOC analyst receives thousands of disconnected alerts every day. They have to manually correlate VPN logs, endpoint alerts, firewall events, cloud activity, and database access. That investigation can take 30 to 40 minutes."
+> 
+> "AttackChain AI reduces security investigation time by automatically reconstructing an attack from thousands of isolated events into one explainable investigation."
 
-**0:20 Dashboard**
-> "This is our SOC dashboard. Notice how we don't just dump 10,000 raw events here. The system correlates events across 14 schemas and groups them into prioritized incidents. Let's look at this 100% confidence alert."
+## Triggering the Investigation
+*(Click 'Launch Investigation')*
+> "Today, our Investigation Engine generates realistic attack scenarios for the demo."
+*(Show Dashboard)*
+> "The dashboard immediately reflects a new incident."
 
-**0:45 One Incident**
-> "We've opened the investigation workspace. Instead of manually querying Splunk, the analyst immediately sees the entire scope of the attack."
+## The Workspace
+*(Open Incident)*
+> "Instead of reading raw logs, the analyst sees the chronological attack progression on the timeline."
 
-**1:15 Timeline**
-> "On the left, we've reconstructed the timeline. Watch how the attack progresses from a simple login to a wire transfer in a matter of minutes."
+## The Graph (Killer Feature)
+*(Point to the Center Graph)*
+> "This is where AttackChain is different. Instead of just connecting events, we extract entities like users, hosts, processes, databases, and attacker infrastructure. We then infer the relationships between them to reconstruct the actual attack path."
 
-**2:00 Graph**
-> "In the center, our correlation engine visualizes the entity graph, instantly mapping the attacker's path and highlighting anomalous nodes in red."
+## MITRE & Context
+*(Point to the MITRE nodes)*
+> "Every behavior you see is automatically mapped to the MITRE ATT&CK framework, so the analyst instantly understands the adversary's intent."
 
-**2:40 Reasoning Trace**
-> "On the right is our deterministic Reasoning Trace. This is critical for banks: instead of a black-box AI score, we show exactly how many points each rule contributed to the 100/100 confidence score."
+## AI & Determinism
+*(Point to AI Summary)*
+> "Notice the summary on the right. The AI doesn't decide whether something is malicious—our deterministic investigation engine does. The AI sits on top purely to translate those technical findings into executive-friendly language."
 
-**3:30 Recommendations**
-> "Below the trace, the engine has automatically loaded the required mitigation playbook. I can see the exact steps needed to stop this attack and click 'Execute'."
+## Containment
+*(Click Containment Action)*
+> "With one action, the analyst executes containment based on the generated playbook, and the investigation state updates."
 
-**4:20 Business Value**
-> "We just reduced what is normally a 40-minute manual investigation across multiple tools down to a 3-minute, fully auditable workflow."
+---
 
-**4:50 Q&A**
-> "Thank you. I'm happy to take any questions."
+## Anticipated Q&A
+
+**Q: Why didn't you just use ChatGPT?**
+> "Large language models are excellent at summarizing investigations, but they shouldn't be the source of truth. Our correlation engine is deterministic and explainable. AI sits on top to translate technical findings into analyst-friendly and executive-friendly summaries."
+
+**Q: How would this work with real data?**
+> "Today our Investigation Engine generates realistic attack scenarios. In production, the event generation stage would be replaced by connectors to SIEMs, EDRs, identity providers, cloud audit logs, and firewall telemetry. The rest of the pipeline—correlation, graph construction, MITRE mapping, AI summarization, and containment—remains unchanged."

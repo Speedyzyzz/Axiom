@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AttackChain AI - Understand Every Attack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#eae7f0",
+                      "primary-container": "#2e3192",
+                      "surface-dim": "#dbd9e1",
+                      "on-tertiary-container": "#f19160",
+                      "primary": "#15157d",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#ffb692",
+                      "inverse-on-surface": "#f2eff8",
+                      "surface-container-highest": "#e4e1ea",
+                      "surface": "#fcf8ff",
+                      "surface-container-low": "#f5f2fb",
+                      "surface-variant": "#e4e1ea",
+                      "surface-tint": "#4f54b4",
+                      "on-tertiary-fixed-variant": "#773207",
+                      "secondary-fixed": "#d3e4fe",
+                      "on-primary-fixed-variant": "#373a9b",
+                      "on-primary": "#ffffff",
+                      "outline-variant": "#c7c5d4",
+                      "on-primary-fixed": "#04006d",
+                      "error": "#ba1a1a",
+                      "on-surface": "#1b1b21",
+                      "tertiary-container": "#6c2a00",
+                      "inverse-surface": "#303036",
+                      "on-secondary": "#ffffff",
+                      "surface-container": "#f0ecf5",
+                      "error-container": "#ffdad6",
+                      "tertiary": "#491a00",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#9da1ff",
+                      "background": "#fcf8ff",
+                      "tertiary-fixed": "#ffdbcb",
+                      "inverse-primary": "#c0c1ff",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-surface-variant": "#464652",
+                      "on-secondary-container": "#54647a",
+                      "secondary-container": "#d0e1fb",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-secondary-fixed": "#0b1c30",
+                      "primary-fixed": "#e1e0ff",
+                      "secondary": "#505f76",
+                      "outline": "#777683",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#341100",
+                      "on-background": "#1b1b21",
+                      "surface-bright": "#fcf8ff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed-dim": "#c0c1ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px",
+                      "2xl": "1rem",
+                      "3xl": "1.5rem"
+              },
+              "spacing": {
+                      "md": "1.5rem",
+                      "gutter": "1.5rem",
+                      "margin": "2rem",
+                      "xl": "4rem",
+                      "lg": "2rem",
+                      "sm": "1rem",
+                      "xs": "0.5rem",
+                      "base": "4px",
+                      "section": "8rem"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "display-md": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "code-base": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-md": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-base": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              },
+              "boxShadow": {
+                  "ambient": "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+                  "ambient-lg": "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)",
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        body {
+            background-color: #F7F8FA; /* Hardcoded light background as per prompt */
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased font-body-base overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation -->
+<nav class="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-b border-surface-variant z-50 transition-all duration-300" id="main-nav">
+<div class="max-w-7xl mx-auto px-gutter h-full flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary fill text-3xl">security</span>
+<span class="font-headline-md text-primary tracking-tight font-bold">AttackChain</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary transition-colors font-medium" href="#">Platform</a>
+<a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary transition-colors font-medium" href="#">Solutions</a>
+<a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary transition-colors font-medium" href="#">Resources</a>
+<a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary transition-colors font-medium" href="#">Pricing</a>
+</div>
+<div class="flex items-center gap-4">
+<a class="hidden md:block text-body-sm font-body-sm text-on-surface hover:text-primary transition-colors font-medium" href="#">Sign In</a>
+<a class="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-body-sm font-body-sm font-medium hover:bg-primary/90 transition-all shadow-sm" href="#">Start Investigation</a>
+</div>
+</div>
+</nav>
+<main class="pt-32 pb-section">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-gutter flex flex-col items-center text-center mt-12 mb-24">
+<h1 class="font-display-lg text-display-lg text-on-surface max-w-4xl mx-auto mb-6 leading-tight">
+                Understand Every Attack Before It Becomes a <span class="text-primary">Breach.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10">
+                AttackChain AI reconstructs cyber attacks from fragmented security events into a single explainable investigation. Built for elite forensics teams.
+            </p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+<a class="bg-primary text-on-primary px-8 py-3.5 rounded-lg text-body-base font-body-base font-medium hover:bg-primary/90 transition-all shadow-ambient hover:-translate-y-0.5 w-full sm:w-auto" href="#">
+                    Start Investigation
+                </a>
+<a class="glass-panel text-on-surface px-8 py-3.5 rounded-lg text-body-base font-body-base font-medium hover:bg-surface-container transition-all shadow-sm w-full sm:w-auto flex items-center justify-center gap-2" href="#">
+<span class="material-symbols-outlined">play_circle</span>
+                    View Live Demo
+                </a>
+</div>
+</section>
+<!-- Product Mockup Section -->
+<section class="max-w-7xl mx-auto px-gutter mb-section relative">
+<div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent rounded-3xl -z-10 blur-3xl transform scale-105 mt-20"></div>
+<div class="glass-panel rounded-3xl p-2 sm:p-4 shadow-ambient-lg border border-white/60 relative overflow-hidden bg-white/40">
+<!-- Browser-like header -->
+<div class="flex items-center gap-2 px-4 py-3 border-b border-surface-variant/50 bg-white/50 rounded-t-2xl">
+<div class="flex gap-1.5">
+<div class="w-3 h-3 rounded-full bg-surface-variant"></div>
+<div class="w-3 h-3 rounded-full bg-surface-variant"></div>
+<div class="w-3 h-3 rounded-full bg-surface-variant"></div>
+</div>
+<div class="mx-auto flex items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-md text-xs text-on-surface-variant font-code-base border border-surface-variant/30">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                        investigate.attackchain.ai/case/4921
+                    </div>
+</div>
+<!-- Dashboard Content (Simulated) -->
+<div class="bg-surface rounded-b-2xl overflow-hidden flex" style="height: 600px;">
+<!-- Simulated Sidebar -->
+<div class="w-64 bg-surface-container-low/65 border-r border-outline-variant/30 flex flex-col p-4 gap-2 hidden md:flex">
+<div class="flex items-center gap-3 px-3 py-2 mb-6">
+<span class="material-symbols-outlined text-primary fill">security</span>
+<span class="font-headline-md text-sm font-bold text-primary tracking-tight">AttackChain AI</span>
+</div>
+<div class="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm px-4 py-2.5 flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-lg">shield_with_heart</span>
+                            Investigations
+                        </div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-lg transition-colors px-4 py-2.5 flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-lg">radar</span>
+                            Threat Feed
+                        </div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-lg transition-colors px-4 py-2.5 flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-lg">analytics</span>
+                            System Status
+                        </div>
+</div>
+<!-- Simulated Main Content -->
+<div class="flex-1 p-6 flex flex-col gap-6 bg-surface overflow-y-auto">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1">Investigation #4921</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Suspected Lateral Movement via Compromised Creds</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-error-container text-on-error-container px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Critical
+                                </span>
+<span class="bg-surface-variant text-on-surface px-3 py-1 rounded-full text-xs font-medium">In Progress</span>
+</div>
+</div>
+<!-- Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Large Graph Card -->
+<div class="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-ambient bg-white/70 border-white">
+<h3 class="font-headline-md text-base text-on-surface mb-4">Attack Graph Reconstruction</h3>
+<div class="w-full h-64 bg-surface-container-low rounded-xl border border-surface-variant/50 relative flex items-center justify-center overflow-hidden">
+<!-- Placeholder for map/graph image to satisfy strict prompt requirements if needed, but styling as a graph container -->
+<img class="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="A highly detailed, modern, light-themed visualization of a complex network attack graph. Nodes are clean, geometric circles connected by thin, precise lines on a pristine white and soft gray background. Deep indigo accents highlight critical path components. The style is clinical, venture-backed SaaS, avoiding any dark-mode hacker tropes. The aesthetic implies institutional power and forensic clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBofh1s0eOzEQty_ZMwBawqayv2ud6IAJcKrZi-NkLUTF-baRMkM2MLpGBIoY4MBtt8D9xn7670bdq7dxLHi1_SjYjel6lCFF2UT9j6nLRuKMDeJeuTAujkLwHaxCCCTEp0cpfvlIooc0BJMi_zZ-l2Ja1VNpCmHM-k_CDdOuesmR2sET1ruAyee9VQHjDjAhhDXocFq-CGO5dm1EldZbSxGPWE7XcmOfJ4GElBUEvjtMn8wG22dQ8"/>
+<!-- Overlaying some UI elements for realism -->
+<div class="absolute inset-0 p-4">
+<div class="absolute top-8 left-1/4 bg-white px-3 py-2 rounded-lg shadow-sm border border-surface-variant text-xs font-code-base flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[16px]">desktop_windows</span>
+                                            WIN-DESK-01
+                                         </div>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-3 py-2 rounded-lg shadow-sm border border-primary/30 text-xs font-code-base flex items-center gap-2 ring-2 ring-primary/20">
+<span class="material-symbols-outlined text-primary text-[16px]">admin_panel_settings</span>
+                                            Privilege Escalation
+                                         </div>
+<div class="absolute bottom-12 right-1/4 bg-white px-3 py-2 rounded-lg shadow-sm border border-surface-variant text-xs font-code-base flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">storage</span>
+                                            DB-PROD-MAIN
+                                         </div>
+</div>
+</div>
+</div>
+<!-- Side Stats -->
+<div class="flex flex-col gap-6">
+<div class="glass-panel rounded-2xl p-5 shadow-ambient bg-white/70 border-white">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-2">Affected Nodes</h3>
+<div class="text-3xl font-display-lg text-on-surface">14</div>
+<p class="text-xs text-error mt-1 flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +3 in last hour
+                                    </p>
+</div>
+<div class="glass-panel rounded-2xl p-5 shadow-ambient bg-white/70 border-white flex-1">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4">Event Timeline</h3>
+<div class="space-y-4">
+<div class="flex gap-3 relative pb-4 border-l-2 border-surface-variant ml-2 pl-4">
+<div class="absolute w-2.5 h-2.5 bg-error rounded-full -left-[6px] top-1"></div>
+<div>
+<div class="text-xs font-code-base text-on-surface-variant">10:42 AM</div>
+<div class="text-sm font-medium text-on-surface">Suspicious PowerShell Execution</div>
+</div>
+</div>
+<div class="flex gap-3 relative pb-4 border-l-2 border-surface-variant ml-2 pl-4">
+<div class="absolute w-2.5 h-2.5 bg-primary rounded-full -left-[6px] top-1"></div>
+<div>
+<div class="text-xs font-code-base text-on-surface-variant">10:38 AM</div>
+<div class="text-sm font-medium text-on-surface">Anomalous Logon Volume</div>
+</div>
+</div>
+<div class="flex gap-3 relative ml-2 pl-4">
+<div class="absolute w-2.5 h-2.5 bg-surface-variant rounded-full -left-[6px] top-1"></div>
+<div>
+<div class="text-xs font-code-base text-on-surface-variant">10:15 AM</div>
+<div class="text-sm font-medium text-on-surface">Initial Access - VPN</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Features / Logos Section -->
+<section class="max-w-7xl mx-auto px-gutter mb-section text-center">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-8 uppercase tracking-widest">Trusted by elite security teams</p>
+<div class="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale">
+<!-- Using placeholder images styled as logos -->
+<img class="h-8 object-contain" data-alt="A minimalist, flat monochrome logo design for a modern technology or finance company. The logo consists of clean, sharp geometric shapes on a pure white background. It conveys professionalism, security, and enterprise scale, fitting seamlessly into a high-trust SaaS landing page footer." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC77Rc6ru-F7OWqeTRlNGuTWld2q1VOw-hVydSxguhvTLmUcc3bjv1wSlhxwqUlbM2njYigBpqySrKwjq4aRsEiSsLo8yiIiKsWNxWmrFawGuc56S3yQxcWfwJ7LiGzU-dREThkBtbUNMFKv_IxWJHljRsMJQ6aoP1OLqZxjjgl0wKA9ZK5OkV61NgJBd4F1Og40TmCziekWIhVXeyUp9juMvSZ_oEP6DxiM-f4PbvoOtTtikSz5BU"/>
+<img class="h-8 object-contain" data-alt="A simple, abstract icon and wordmark representing an enterprise software company. The design is starkly black and white, featuring a strong, sans-serif typography paired with a subtle, solid geometric emblem. It exudes corporate reliability and modern aesthetic restraint." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDnbf-BGqvmEerVXAJ2EDQuOTAPHhHeWSU5nMiicP1Jh9kLdDuw46gjgp0DSz-SAPHjoiJW2qE6NfuJsSRxq6tqjNENDb-R7lqqY0w7WUbbsAufjVd6aqRb_uz6eCNaOwt6_jhxvokjYI1ZlkRwIB0UWW64Etzs9RSgK4sSl9y4Fk5DmNN_ASfaWhYxgOsvpzNCnaFIX8WITtFt9Td8Hexk4od9e-QWyZBhACcPAb9yWbBZg5u5J0"/>
+<img class="h-8 object-contain" data-alt="A sleek, modern corporate logo featuring a stylized shield or data node symbol paired with a heavy, clean typeface. Rendered entirely in grayscale on a white background to serve as a partner logo placeholder in a premium B2B software layout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrXfl1czdDOu4yDxtN2thTa6mBDijn6m_JwECkMawnHkK2bZ3pRVrvsfhJtY5TMUKQf2Z0gYe4u7OdxYldVJGIz_K4hAI-Z4iv1u_BEhwzSY_1v1hKZG3YiTnUOUbSaKMaRFEFllnxIYm4dWx3fqSp-6-B9FhIslFii_73YBLP8atPHPLFvjA4_vUlSxdb6Hj17_-2LJL_RRzGaQtqTbn44Qdd2XFBlIoh4F13lMCUaHe83APJiRw"/>
+<img class="h-8 object-contain" data-alt="An enterprise brand logo consisting of interconnected circles or lines, symbolizing network or data flow. The design is flat, high-contrast monochrome, intended to look like a trusted partner badge on a bright, professional cybersecurity marketing page." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwTcVF-zst81mVjYWX8JLpQfuPuhtTDYkBjd0CMdeL7iSzuZJnNW0rL__2xiEJ4ktik6lJq4JdE0QeyoFAuchUWDzAo71xwLUyCeYoW59S1P0BR5cpBTCaxd_Rq_tHYNIhjC4ADdf--uO84FlntqpK7hoAyMNvV1GpaZ3LMyzbahviLPL9_gmq5jiC0K5gByocqg5VcxMesZ9SqwXxmLHbIosgf0ApyFRzOnuA9KH2JYAnnjPL_eU"/>
+</div>
+</section>
+</main>
+<script>
+        // Simple nav background transition on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('main-nav');
+            if (window.scrollY > 20) {
+                nav.classList.add('shadow-sm');
+                nav.classList.replace('bg-white/80', 'bg-white/95');
+            } else {
+                nav.classList.remove('shadow-sm');
+                nav.classList.replace('bg-white/95', 'bg-white/80');
+            }
+        });
+    </script>
+</body></html>

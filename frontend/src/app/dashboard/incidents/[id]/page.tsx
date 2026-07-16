@@ -2,33 +2,28 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Loader2, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, ShieldAlert, Zap, Download, Crosshair } from 'lucide-react';
 import { useNodesState, useEdgesState, Node, Edge } from '@xyflow/react';
 
 import LeftPane from '@/components/investigation/LeftPane';
 import CenterPane from '@/components/investigation/CenterPane';
 import RightPane from '@/components/investigation/RightPane';
 
-const fetchAttackChain = async (id: string) => {
-  try {
-    const res = await fetch(`http://127.0.0.1:8000/api/v1/attack-chain/${id}`);
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+const fetchIncidentDto = async (id: string) => {
+  const res = await fetch(`${API_URL}/api/v1/incidents/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch incident");
+  const json = await res.json();
+  return json.data;
 };
 
-const fetchGraph = async (id: string) => {
-  try {
-    const res = await fetch(`http://127.0.0.1:8000/api/v1/graph/${id}`);
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return { nodes: [], edges: [] };
-  }
+const containIncident = async (id: string) => {
+  const res = await fetch(`${API_URL}/api/v1/incidents/${id}/contain`, { method: 'POST' });
+  if (!res.ok) throw new Error("Failed to contain");
+  return await res.json();
 };
 
 export default function InvestigationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +31,7 @@ export default function InvestigationPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const searchParams = useSearchParams();
   const isDemo = searchParams.get('demo') === 'true';
+  const queryClient = useQueryClient();
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -43,184 +39,199 @@ export default function InvestigationPage({ params }: { params: Promise<{ id: st
   const [investigationStatus, setInvestigationStatus] = useState<string[]>([]);
   const [isInvestigating, setIsInvestigating] = useState(isDemo);
 
-  const { data: attackData } = useQuery({
-    queryKey: ['attack_chain', id],
-    queryFn: () => fetchAttackChain(id)
+  const { data: dto, isLoading } = useQuery({
+    queryKey: ['incident_dto', id],
+    queryFn: () => fetchIncidentDto(id)
   });
 
-  const { data: graphData } = useQuery({
-    queryKey: ['graph', id],
-    queryFn: () => fetchGraph(id)
+  const containMutation = useMutation({
+    mutationFn: () => containIncident(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incident_dto', id] });
+    }
   });
 
   const startReplay = () => {
-    if (!graphData || graphData.nodes.length === 0) return;
+    if (!dto?.graph || dto.graph.nodes.length === 0) return;
     setIsInvestigating(true);
     setNodes([]);
     setEdges([]);
-    setInvestigationStatus(["Reconstructing Timeline..."]);
+    setInvestigationStatus(["Executing deterministic correlation..."]);
     
     let step = 0;
     
     const interval = setInterval(() => {
-      const node = graphData.nodes[step];
+      const node = dto.graph.nodes[step];
       if (node && node.data?.label) {
-        setInvestigationStatus(prev => [...prev, `Found: ${node.data.label}`]);
+        setInvestigationStatus(prev => [...prev, `Mapped: ${node.data.label}`]);
       }
       
-      const progress = step / (graphData.nodes.length - 1);
-      const edgesToShow = Math.ceil(progress * graphData.edges.length);
+      const progress = step / (dto.graph.nodes.length - 1);
+      const edgesToShow = Math.ceil(progress * dto.graph.edges.length);
       
-      setNodes(graphData.nodes.slice(0, step + 1));
-      setEdges(graphData.edges.slice(0, edgesToShow));
+      setNodes(dto.graph.nodes.slice(0, step + 1));
+      setEdges(dto.graph.edges.slice(0, edgesToShow));
       
       step++;
-      if (step >= graphData.nodes.length) {
+      if (step >= dto.graph.nodes.length) {
         clearInterval(interval);
         setIsInvestigating(false);
-        setInvestigationStatus(prev => [...prev, "Investigation Complete."]);
-        setNodes(graphData.nodes);
-        setEdges(graphData.edges);
+        setInvestigationStatus(prev => [...prev, "Engine halt. Correlation verified."]);
+        setNodes(dto.graph.nodes);
+        setEdges(dto.graph.edges);
       }
     }, 400);
   };
 
   useEffect(() => {
-    if (!isDemo) {
-      if (graphData) {
-        setNodes(graphData.nodes);
-        setEdges(graphData.edges);
-      }
-      return;
+    if (dto?.graph && !isInvestigating) {
+      setNodes(dto.graph.nodes);
+      setEdges(dto.graph.edges);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dto, isInvestigating]);
 
-    const eventSource = new EventSource('http://127.0.0.1:8000/api/v1/demo/stream');
-    
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setInvestigationStatus(prev => [...prev, data.message]);
-      
-      if (graphData && graphData.nodes.length > 0) {
-        const progress = investigationStatus.length / 8;
-        const nodesToShow = Math.ceil(progress * graphData.nodes.length);
-        const edgesToShow = Math.ceil(progress * graphData.edges.length);
-        
-        setNodes(graphData.nodes.slice(0, nodesToShow));
-        setEdges(graphData.edges.slice(0, edgesToShow));
-      }
-
-      if (data.message === "Investigation Complete.") {
-        eventSource.close();
-        setIsInvestigating(false);
-        if (graphData) {
-          setNodes(graphData.nodes);
-          setEdges(graphData.edges);
-        }
-      }
-    };
-
-    return () => eventSource.close();
-  }, [isDemo, graphData]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Keyboard Shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (isDemo && dto?.graph) {
+      startReplay();
+    }
+  }, [isDemo, dto]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (!isInvestigating) startReplay();
-      } else if (e.code === 'Escape' || e.code === 'Backspace') {
-        e.preventDefault();
-        router.push('/dashboard');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [router, isInvestigating, graphData]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!attackData) return (
-    <div className="flex h-screen items-center justify-center bg-[#050816] text-primary">
-      <Loader2 className="w-8 h-8 animate-spin" />
+  if (isLoading || !dto) return (
+    <div className="flex h-screen items-center justify-center bg-background text-primary">
+      <Loader2 className="w-10 h-10 animate-spin opacity-50" />
     </div>
   );
 
-  const incident = attackData.incident;
+  const incident = dto.incident;
+  const mitreTactic = dto.events.find((e: any) => e.mitre_tactic)?.mitre_tactic || 'Multiple';
+  const isContained = incident.status === 'contained';
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050816] text-body">
-      {/* Header */}
-      <header className="px-8 py-4 border-b border-border bg-surface shrink-0 flex items-center justify-between z-10">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background text-body font-sans">
+      
+      <header className="px-6 py-4 bg-surface border-b border-border shrink-0 flex items-center justify-between z-10">
         <div className="flex items-center gap-6">
           <motion.button 
             whileHover={{ x: -2 }}
             onClick={() => router.push('/dashboard')}
-            className="p-2 text-muted hover:text-primary bg-card rounded-md transition-colors border border-border hover:border-primary/50 focus:ring-2 focus:ring-primary focus:outline-none"
+            className="p-2 text-muted hover:text-heading bg-background rounded transition-all border border-border hover:border-muted"
           >
             <ArrowLeft className="w-4 h-4" />
           </motion.button>
+          
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded bg-danger/10 text-danger border border-danger/20 tracking-wider">
-                {incident.severity?.toUpperCase() || 'CRITICAL'} ALERT
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded flex items-center gap-1 ${
+                incident.severity === 'CRITICAL' ? 'bg-danger text-white' : 
+                incident.severity === 'HIGH' ? 'bg-warning text-white' : 'bg-primary text-white'
+              }`}>
+                {incident.severity === 'CRITICAL' && <ShieldAlert className="w-3 h-3" />}
+                {incident.severity}
               </span>
-              <span className="text-[12px] font-bold font-mono text-muted tracking-widest">INC-{incident.id}</span>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-card border border-border text-primary tracking-widest">
-                {attackData.report_mode === 'ENGINE_PLUS_LLM' ? 'AI ENHANCED' : 'DETERMINISTIC'}
+              <span className="text-[11px] font-mono text-muted font-bold uppercase tracking-widest">INC-{incident.id}</span>
+              <span className="text-[10px] font-bold text-[#00E5FF] border border-[#00E5FF]/30 bg-[#00E5FF]/10 px-2 py-0.5 rounded flex items-center gap-1 uppercase tracking-widest">
+                <Zap className="w-3 h-3" /> Auto-Correlated
               </span>
             </div>
-            <h1 className="text-[20px] font-bold text-heading tracking-tight">{incident.title}</h1>
+            <h1 className="text-[18px] font-bold text-heading tracking-tight flex items-center gap-2">
+              {incident.title}
+            </h1>
           </div>
         </div>
-        <div className="flex gap-4">
-          <div className="flex items-center mr-6 gap-2">
-            <span className="text-muted text-[13px] font-mono tracking-widest">SCORE:</span>
-            <span className={`text-[20px] font-bold font-mono ${incident.confidence > 80 ? 'text-danger' : 'text-warning'}`}>{incident.confidence}</span>
-            <span className="text-muted text-[13px] font-mono">/ 100</span>
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 mr-4">
+            <div className="flex flex-col items-end">
+              <span className="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">Status</span>
+              <span className={`text-[14px] font-mono font-bold ${isContained ? 'text-success' : 'text-danger'}`}>
+                {isContained ? 'CONTAINED' : 'OPEN'}
+              </span>
+            </div>
+            
+            <div className="h-8 w-px bg-border"></div>
+            
+            <div className="flex flex-col items-end">
+              <span className="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">MITRE Tactic</span>
+              <span className="text-[14px] font-mono text-heading font-bold flex items-center gap-1"><Crosshair className="w-3.5 h-3.5 text-muted"/> {mitreTactic}</span>
+            </div>
+            
+            <div className="h-8 w-px bg-border"></div>
+
+            <div className="flex flex-col items-end">
+              <span className="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">Risk Score</span>
+              <div className="flex items-baseline gap-0.5">
+                <span className={`text-[24px] font-bold tracking-tighter leading-none ${incident.risk_score > 80 ? 'text-danger' : 'text-warning'}`}>
+                  {Math.round(incident.risk_score)}
+                </span>
+                <span className="text-muted text-[12px] font-bold">/100</span>
+              </div>
+            </div>
           </div>
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 border border-border text-heading text-[13px] font-bold rounded-lg hover:bg-card flex items-center gap-2 transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            Acknowledge
-          </motion.button>
-          <motion.button 
-            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(239, 68, 68, 0.4)' }}
-            whileTap={{ scale: 0.98 }}
-            className="px-5 py-2 bg-danger text-white text-[13px] font-bold rounded-lg hover:bg-red-600 flex items-center gap-2 transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)] focus:ring-2 focus:ring-danger focus:ring-offset-2 focus:ring-offset-background focus:outline-none"
-          >
-            <Lock className="w-4 h-4" />
-            Isolate Host
-          </motion.button>
+          
+          <div className="flex gap-3">
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 bg-background border border-border text-heading text-[12px] font-bold rounded hover:bg-surface flex items-center gap-2 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </motion.button>
+
+            <motion.button 
+              whileHover={isContained ? {} : { scale: 1.02 }}
+              whileTap={isContained ? {} : { scale: 0.98 }}
+              onClick={() => containMutation.mutate()}
+              disabled={isContained || containMutation.isPending}
+              className={`px-5 py-2 text-white text-[12px] font-bold rounded flex items-center gap-2 transition-colors ${
+                isContained 
+                ? 'bg-success/50 border border-success cursor-not-allowed shadow-[0_0_15px_rgba(34,197,94,0.4)]' 
+                : 'bg-danger hover:bg-red-700 shadow-[0_0_15px_rgba(225,29,72,0.4)]'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" /> {isContained ? 'Host Isolated' : 'Isolate Host'}
+            </motion.button>
+          </div>
         </div>
       </header>
 
-      {/* 3-Pane Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        <LeftPane 
-          evidenceList={attackData.evidence}
-          chain={attackData.attack_chain}
-          reasoning={attackData.reasoning_trace}
-          isInvestigating={isInvestigating}
-          investigationStatus={investigationStatus}
-        />
+      <div className="flex-1 flex overflow-hidden p-0 gap-[1px] bg-border">
+        <div className="w-[320px] shrink-0 bg-background overflow-hidden flex flex-col relative z-10 h-full">
+          <LeftPane 
+            evidenceList={dto.evidence}
+            chain={dto.events.map((e: any) => {
+              const date = new Date(e.timestamp);
+              const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+              return { action: e.action, time: timeString };
+            })}
+            iocs={dto.iocs}
+          />
+        </div>
         
-        <CenterPane 
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          isInvestigating={isInvestigating}
-          startReplay={startReplay}
-        />
+        <div className="flex-1 overflow-hidden relative z-0 h-full bg-surface">
+          <CenterPane 
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            isInvestigating={isInvestigating}
+            startReplay={startReplay}
+          />
+        </div>
         
-        <RightPane 
-          attackData={attackData}
-          recommendations={attackData.recommendations}
-        />
+        <div className="w-[360px] shrink-0 bg-background overflow-hidden flex flex-col relative z-10 h-full">
+          <RightPane 
+            attackData={{
+              incident_title: incident.title,
+              root_cause: dto.summary.root_cause,
+              business_impact: dto.summary.executive_summary
+            }}
+            recommendations={[dto.summary.recommendation]}
+            isInvestigating={isInvestigating}
+            investigationStatus={investigationStatus}
+            auditLogs={dto.audit_logs}
+          />
+        </div>
       </div>
     </div>
   );

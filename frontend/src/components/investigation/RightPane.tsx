@@ -1,67 +1,113 @@
-import { motion } from 'framer-motion';
-import { ShieldAlert, ShieldBan, GitMerge, CheckSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldAlert, ShieldBan, TerminalSquare, CheckSquare, Cpu } from 'lucide-react';
 
-export default function RightPane({ attackData, recommendations }: { attackData?: { executive_summary?: string; technical_summary?: string; business_impact?: string }; recommendations?: { playbook?: string; recommended_actions?: string[] } }) {
+export default function RightPane({ attackData, recommendations, isInvestigating, investigationStatus, auditLogs }: { attackData?: { executive_summary?: string; technical_summary?: string; business_impact?: string; incident_title?: string; root_cause?: string; }; recommendations?: string[]; isInvestigating?: boolean; investigationStatus?: string[]; auditLogs?: any[] }) {
   return (
-    <div className="w-[30%] bg-surface flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden border-l border-border">
       
-      {/* 1. Summaries */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <h2 className="text-[13px] font-bold font-mono text-heading uppercase tracking-widest flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-danger" /> 
-          Executive Summary
-        </h2>
-        
-        <div className="bg-card border border-border p-4 rounded-lg shadow-sm">
-          <p className="text-[14px] text-body leading-relaxed">{attackData?.executive_summary}</p>
+      <div className="flex-1 overflow-y-auto hide-scrollbar">
+        {/* 1. Audit Log / Deterministic Engine */}
+        <div className="p-5 border-b border-border bg-surface">
+          <h2 className="text-[11px] font-bold text-heading uppercase tracking-widest mb-4 flex items-center gap-2 font-sans">
+            <Cpu className="w-3.5 h-3.5 text-muted" /> Audit Log
+          </h2>
+
+          <div className="space-y-3">
+            {isInvestigating ? (
+              <div className="bg-[#0A0A0A] p-4 rounded-md font-mono text-[11px] space-y-2">
+                {investigationStatus?.map((status: string, i: number) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-white/70 flex items-start gap-2 font-medium"
+                  >
+                    <span className="text-success mt-0.5">&gt;</span>
+                    {status}
+                  </motion.div>
+                ))}
+                <div className="w-2 h-3 bg-white/50 animate-pulse mt-2"></div>
+              </div>
+            ) : (
+              <AnimatePresence>
+                {auditLogs?.map((log: any, i: number) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1, duration: 0.3 }}
+                    key={i}
+                    className="bg-background border border-border rounded-md p-3 relative overflow-hidden group hover:bg-surface transition-colors"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-border group-hover:bg-primary transition-colors"></div>
+                    
+                    <div className="flex justify-between items-start mb-2 pl-2">
+                      <h4 className="text-[11px] font-bold text-heading uppercase tracking-wide">{log.action}</h4>
+                      <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 shrink-0">
+                        {log.user}
+                      </span>
+                    </div>
+                    
+                    <div className="text-[10px] font-mono text-muted pl-2">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
+            {!isInvestigating && (!auditLogs || auditLogs.length === 0) && (
+              <div className="text-[11px] text-muted font-mono bg-background p-3 rounded-md border border-border">No audit logs available.</div>
+            )}
+          </div>
         </div>
 
-        <h3 className="text-[12px] font-bold font-mono text-muted uppercase tracking-widest mt-6">Technical Summary</h3>
-        <div className="bg-background border border-border p-4 rounded-lg font-mono text-[12px] text-muted leading-relaxed">
-          {attackData?.technical_summary}
-        </div>
+        {/* 2. AI Synthesis */}
+        <div className="p-5 space-y-4 bg-surface border-b border-border">
+          <h2 className="text-[11px] font-bold text-heading uppercase tracking-widest flex items-center gap-2 font-sans mb-2">
+            <TerminalSquare className="w-3.5 h-3.5 text-muted" /> AI Synthesis
+          </h2>
+          
+          <div>
+            <h3 className="text-[10px] text-muted uppercase tracking-widest font-bold mb-1">Executive Summary</h3>
+            <p className="text-[12px] text-heading font-medium leading-relaxed">{attackData?.business_impact || "Investigation is ongoing."}</p>
+          </div>
 
-        <h3 className="text-[12px] font-bold font-mono text-muted uppercase tracking-widest mt-6">Business Impact</h3>
-        <div className="bg-danger/10 border border-danger/20 p-4 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.05)]">
-          <p className="text-[13px] text-danger font-bold leading-relaxed">{attackData?.business_impact}</p>
+          <div>
+            <h3 className="text-[10px] text-muted uppercase tracking-widest font-bold mb-1">Root Cause</h3>
+            <p className="text-[12px] text-danger font-bold leading-relaxed">{attackData?.root_cause || "Assessing potential impact."}</p>
+          </div>
+          
+          <div className="flex gap-4">
+             <div className="flex-1">
+               <h3 className="text-[10px] text-muted uppercase tracking-widest font-bold mb-1">Affected Assets</h3>
+               <p className="text-[12px] text-heading font-medium">Multiple Endpoints</p>
+             </div>
+             <div className="flex-1">
+               <h3 className="text-[10px] text-muted uppercase tracking-widest font-bold mb-1">Risk</h3>
+               <p className="text-[12px] text-warning font-bold">Critical</p>
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* 2. Action Center / Playbook */}
-      <div className="p-6 bg-card border-t border-border shrink-0 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
-        <h2 className="text-[13px] font-bold font-mono text-heading uppercase tracking-widest mb-4 flex items-center gap-2">
-          <ShieldBan className="w-4 h-4 text-warning" />
-          Action Center
+      {/* 3. Action Center */}
+      <div className="p-5 bg-background border-t border-border shrink-0 z-10">
+        <h2 className="text-[11px] font-bold text-heading uppercase tracking-widest mb-4 flex items-center gap-2 font-sans">
+          <ShieldBan className="w-3.5 h-3.5 text-warning" /> Hard Action
         </h2>
         
-        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 mb-4">
-          <div className="text-[11px] font-mono text-warning font-bold mb-1 tracking-widest">RECOMMENDED PLAYBOOK</div>
-          <div className="text-[14px] font-bold text-heading">{recommendations?.playbook}</div>
+        <div className="bg-warning/5 border border-warning/20 rounded-md p-3 mb-4">
+          <div className="text-[9px] font-mono text-warning font-bold mb-1 tracking-widest uppercase">Target Playbook</div>
+          <div className="text-[12px] font-bold text-heading">Automated Containment Protocol</div>
         </div>
 
-        <div className="space-y-3 mb-6">
-          {recommendations?.recommended_actions?.map((action: string, i: number) => (
-            <motion.div 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 + (i * 0.1) }}
-              key={i} 
-              className="flex items-center gap-3 text-[13px] text-body"
-            >
-              <CheckSquare className="w-4 h-4 text-muted shrink-0" />
-              <span className="leading-tight">{action}</span>
-            </motion.div>
+        <div className="space-y-2 mb-5">
+          {recommendations?.map((action: string, i: number) => (
+            <div key={i} className="flex items-start gap-2 text-[11px] text-body font-medium">
+              <CheckSquare className="w-3.5 h-3.5 text-muted shrink-0 mt-0.5" />
+              <span className="leading-snug">{action}</span>
+            </div>
           ))}
         </div>
-
-        <motion.button 
-          whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(0,229,255,0.3)' }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-4 bg-primary text-background font-bold text-[13px] rounded-lg shadow-[0_5px_15px_rgba(0,229,255,0.2)] flex items-center justify-center gap-2 hover:bg-[#00c9e0] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface focus:ring-primary focus:outline-none"
-        >
-          <GitMerge className="w-5 h-5" />
-          Execute Mitigation Playbook
-        </motion.button>
       </div>
 
     </div>

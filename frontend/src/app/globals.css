@@ -1,33 +1,38 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand Specific */
-  --color-background: #050816;
-  --color-surface: #0F172A;
+  /* Dark Navy / Warm Gold Design System */
   
-  --color-card: #111827;
-  --color-card-foreground: #FFFFFF;
+  /* Core Backgrounds */
+  --color-background: #0B0F14;
+  --color-surface: #10161D;
+  --color-card: #10161D;
+  --color-dark: #0B0F14;
   
-  --color-border: #1E293B; /* Subtle border for dark mode */
+  /* Typography Colors */
+  --color-heading: #F5F3EE;
+  --color-body: #8A8F98;
+  --color-muted: #8A8F98;
   
-  /* Accent & Semantic */
-  --color-primary: #00E5FF; 
-  --color-primary-foreground: #050816;
+  /* Accents */
+  --color-primary: #C9A227; /* Warm Gold */
+  --color-primary-foreground: #0B0F14;
+  --color-secondary: #10161D;
+  --color-secondary-foreground: #F5F3EE;
   
-  --color-secondary: #7C3AED;
+  /* Semantic */
+  --color-success: #16A34A; 
+  --color-danger: #DC2626;
+  --color-warning: #F59E0B;
+  --color-info: #2563EB;
   
-  --color-success: #22C55E; 
-  --color-danger: #EF4444; 
-  --color-warning: #F59E0B; 
-  
-  --color-heading: #FFFFFF;
-  --color-body: #94A3B8; /* Slate 400 */
-  --color-muted: #475569; /* Slate 600 */
+  /* Borders */
+  --color-border: #1C232D;
 
-  /* Enforce Inter globally */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* Typography Configuration */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-inter);
+  --font-mono: var(--font-mono);
 }
 
 @layer base {
@@ -45,47 +50,54 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em; 
   }
   
   h1, h2, h3, h4, h5, h6 {
     color: var(--color-heading);
-    font-family: var(--font-sans);
+    font-family: var(--font-display);
+    letter-spacing: -0.03em; 
+    font-weight: 700; /* Bold weight as requested */
   }
 }
 
-/* Custom Scrollbar for Dark Mode */
+@layer components {
+  /* Premium Glass Panel (Finexa Style) */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+  }
+  
+  .glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Finexa Hero Grid */
+  .hero-canvas {
+    background-color: var(--color-secondary);
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px; 
+  }
+}
+
+/* Custom Scrollbar for absolute minimal feel */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface);
-  border-radius: 4px;
+  background: #3F3F46;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted);
-}
-
-/* Lenis Smooth Scroll Recommended CSS */
-html.lenis, html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-.lenis.lenis-smooth iframe {
-  pointer-events: none;
+  background: #71717A;
 }

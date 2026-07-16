@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-const inter = Inter({
+const inter = Inter_Tight({
   variable: "--font-inter",
   subsets: ["latin"],
-  // Explicitly loading the weights requested
   weight: ["400", "500", "600", "700"],
+});
+
+const jbMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -21,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-body">
         <Providers>
           {children}

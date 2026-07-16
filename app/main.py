@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 import time
 import uuid
 from app.utils.logger import log
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints import router
 from app.exceptions.custom_exceptions import IncidentNotFound, LLMUnavailable, TimelineCorrupted, SeedFailed
@@ -14,15 +15,34 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AttackChain AI Backend", version="1.0")
 
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://127.0.0.1:3000,https://attackchain.ai,https://attackchain-demo.vercel.app"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(router, prefix="/api/v1")
+
+@app.get("/")
+def read_root():
+    return {"message": "AttackChain AI Engine is running. Access the frontend at port 3000, or view API docs at /docs."}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import Response
+    return Response(content=b"", media_type="image/x-icon")
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

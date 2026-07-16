@@ -1,100 +1,99 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
-from app.database.connection import Base
 from sqlalchemy.orm import relationship
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    role = Column(String)
-    department = Column(String)
-    employee_or_customer = Column(String)
-    created_at = Column(DateTime)
-
-class Device(Base):
-    __tablename__ = "devices"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    device_fingerprint = Column(String)
-    device_type = Column(String)
-    is_known_device = Column(Boolean)
-    first_seen_at = Column(DateTime)
-
-class Session(Base):
-    __tablename__ = "sessions"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    device_id = Column(Integer, ForeignKey("devices.id"))
-    session_token = Column(String)
-    started_at = Column(DateTime)
-    ip_address = Column(String)
-    is_active = Column(Boolean)
-
-class LoginLog(Base):
-    __tablename__ = "login_logs"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    session_id = Column(Integer, ForeignKey("sessions.id"))
-    login_time = Column(DateTime)
-    ip_address = Column(String)
-    location_city = Column(String)
-    location_country = Column(String)
-    login_method = Column(String)
-    success = Column(Boolean)
-
-class VpnLog(Base):
-    __tablename__ = "vpn_logs"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    session_id = Column(Integer, ForeignKey("sessions.id"))
-    vpn_login_time = Column(DateTime)
-    source_ip = Column(String)
-    source_country = Column(String)
-    flagged_region = Column(Boolean)
-
-class SecurityEvent(Base):
-    __tablename__ = "security_events"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    session_id = Column(Integer, ForeignKey("sessions.id"))
-    event_type = Column(String)
-    event_time = Column(DateTime)
-    resource_accessed = Column(String)
-    risk_weight = Column(Integer)
-
-class Beneficiary(Base):
-    __tablename__ = "beneficiaries"
-    id = Column(Integer, primary_key=True, index=True)
-    customer_account_id = Column(Integer, ForeignKey("users.id"))
-    beneficiary_name = Column(String)
-    beneficiary_account = Column(String)
-    added_by_user_id = Column(Integer, ForeignKey("users.id"))
-    added_at = Column(DateTime)
-
-class Transaction(Base):
-    __tablename__ = "transactions"
-    id = Column(Integer, primary_key=True, index=True)
-    customer_account_id = Column(Integer, ForeignKey("users.id"))
-    beneficiary_id = Column(Integer, ForeignKey("beneficiaries.id"))
-    amount = Column(Float)
-    transaction_time = Column(DateTime)
-    transaction_type = Column(String)
-    status = Column(String)
+from app.database.connection import Base
 
 class Incident(Base):
     __tablename__ = "incidents"
     id = Column(Integer, primary_key=True, index=True)
-    incident_title = Column(String)
-    confidence_score = Column(Float)
-    status = Column(String)
-    summary_json = Column(String) # For caching LLM output
-    reasoning_trace_json = Column(String)
+    title = Column(String)
+    status = Column(String) # 'OPEN', 'CONTAINED'
+    severity = Column(String) # 'CRITICAL', 'HIGH', 'MEDIUM'
+    risk_score = Column(Float)
     created_at = Column(DateTime)
+    
+    events = relationship("Event", back_populates="incident", cascade="all, delete-orphan")
+    evidence = relationship("Evidence", back_populates="incident", cascade="all, delete-orphan")
+    graph_nodes = relationship("GraphNode", back_populates="incident", cascade="all, delete-orphan")
+    graph_edges = relationship("GraphEdge", back_populates="incident", cascade="all, delete-orphan")
+    ioc = relationship("IOC", back_populates="incident", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="incident", cascade="all, delete-orphan")
+    ai_summary = relationship("AiSummary", back_populates="incident", uselist=False, cascade="all, delete-orphan")
 
-
-class IncidentEvent(Base):
-    __tablename__ = "incident_events"
+class Event(Base):
+    __tablename__ = "events"
     id = Column(Integer, primary_key=True, index=True)
     incident_id = Column(Integer, ForeignKey("incidents.id"))
-    source_table = Column(String) # e.g. 'login_logs', 'vpn_logs'
-    source_id = Column(Integer)   # ID in the source table
+    timestamp = Column(DateTime)
+    source_ip = Column(String)
+    user_account = Column(String)
+    event_type = Column(String)
+    action = Column(String)
+    severity = Column(String)
+    description = Column(String)
+    mitre_technique_id = Column(String)
+    mitre_tactic = Column(String)
+
+    incident = relationship("Incident", back_populates="events")
+
+class Evidence(Base):
+    __tablename__ = "evidence"
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
+    type = Column(String)
+    title = Column(String)
+    description = Column(String)
+    confidence = Column(String)
+    metadata_json = Column(String)
+    
+    incident = relationship("Incident", back_populates="evidence")
+
+class GraphNode(Base):
+    __tablename__ = "graph_nodes"
+    id = Column(String, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    label = Column(String)
+    type = Column(String)
+    status = Column(String)
+
+    incident = relationship("Incident", back_populates="graph_nodes")
+
+class GraphEdge(Base):
+    __tablename__ = "graph_edges"
+    id = Column(String, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    source_node_id = Column(String)
+    target_node_id = Column(String)
+    label = Column(String)
+
+    incident = relationship("Incident", back_populates="graph_edges")
+
+class IOC(Base):
+    __tablename__ = "iocs"
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    type = Column(String)
+    value = Column(String)
+    context = Column(String)
+
+    incident = relationship("Incident", back_populates="ioc")
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    timestamp = Column(DateTime)
+    action = Column(String)
+    user = Column(String)
+
+    incident = relationship("Incident", back_populates="audit_logs")
+
+class AiSummary(Base):
+    __tablename__ = "ai_summaries"
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    executive_summary = Column(String)
+    root_cause = Column(String)
+    recommendation = Column(String)
+    
+    incident = relationship("Incident", back_populates="ai_summary")
