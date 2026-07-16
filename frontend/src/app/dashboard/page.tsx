@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isSeeding, setIsSeeding] = useState(false);
-  const [scenario, setScenario] = useState('random');
+  const [scenario, setScenario] = useState('real_dataset');
   
   const { data: incidents = [], isLoading: isLoadingIncidents } = useQuery({ queryKey: ['incidents'], queryFn: fetchIncidents, refetchInterval: 5000, retry: 5, retryDelay: 2000 });
   const { data: stats, isLoading: isLoadingStats } = useQuery({ queryKey: ['dashboard_stats'], queryFn: fetchDashboardStats, refetchInterval: 5000, retry: 5 });
@@ -54,10 +54,13 @@ export default function DashboardPage() {
 
   const seedMutation = useMutation({
     mutationFn: runPipelineSeed,
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard_stats'] });
       setIsSeeding(false);
+      if (response?.data?.incident_id) {
+        router.push(`/dashboard/incidents/${response.data.incident_id}?demo=true`);
+      }
     },
     onError: () => setIsSeeding(false)
   });
@@ -124,6 +127,7 @@ export default function DashboardPage() {
               disabled={isSeeding}
               className="bg-transparent text-heading text-[13px] font-bold py-2.5 px-4 outline-none border-r border-border cursor-pointer disabled:opacity-50"
             >
+              <option value="real_dataset">Real BOTS Dataset (Splunk)</option>
               <option value="random">Random Scenario</option>
               <option value="vpn">VPN Compromise</option>
               <option value="ransomware">Ransomware Execution</option>

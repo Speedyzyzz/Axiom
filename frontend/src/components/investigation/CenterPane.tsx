@@ -5,38 +5,10 @@ import { ReactFlow, Background, Controls, Node, Edge, OnNodesChange, OnEdgesChan
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
 const nodeWidth = 240;
 const nodeHeight = 90;
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
-  dagreGraph.setGraph({ rankdir: direction, ranksep: 220, nodesep: 100 });
 
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = direction === 'LR' ? Position.Left : Position.Top;
-    node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2,
-    };
-    return node;
-  });
-
-  return { nodes, edges };
-};
 
 const getEntityIcon = (type: string | undefined, isMalicious: boolean) => {
   const t = (type || '').toLowerCase();
@@ -136,14 +108,6 @@ const edgeTypes = { custom: CustomEdge };
 const LayoutFlow = ({ nodes, edges, onNodesChange, onEdgesChange, isInvestigating, startReplay }: any) => {
   const { fitView } = useReactFlow();
 
-  useEffect(() => {
-    if (nodes.length > 0) {
-      setTimeout(() => {
-        fitView({ padding: 0.15, duration: 800, maxZoom: 1.2 });
-      }, 100);
-    }
-  }, [nodes, fitView]);
-
   return (
     <ReactFlow
       nodes={nodes}
@@ -162,6 +126,7 @@ const LayoutFlow = ({ nodes, edges, onNodesChange, onEdgesChange, isInvestigatin
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView
+      fitViewOptions={{ padding: 0.25, duration: 800, maxZoom: 1.1, minZoom: 0.9 }}
       className="z-10"
       colorMode="dark"
       minZoom={0.1}
@@ -182,15 +147,6 @@ const LayoutFlow = ({ nodes, edges, onNodesChange, onEdgesChange, isInvestigatin
 
 export default function CenterPane({ nodes, edges, onNodesChange, onEdgesChange, isInvestigating, startReplay }: { nodes: Node[]; edges: Edge[]; onNodesChange: OnNodesChange<Node>; onEdgesChange: OnEdgesChange<Edge>; isInvestigating: boolean; startReplay: () => void }) {
   
-  // Format the nodes for our custom type
-  const formattedNodes = nodes.map(n => ({
-    ...n,
-    type: 'custom',
-    data: { ...n.data, type: n.type }
-  }));
-
-  const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(formattedNodes, edges);
-
   return (
     <div className="flex-1 h-full relative overflow-hidden flex flex-col bg-background">
       <div className="absolute top-4 left-4 z-20">
@@ -204,11 +160,11 @@ export default function CenterPane({ nodes, edges, onNodesChange, onEdgesChange,
       </div>
 
       <div className="flex-1 w-full h-full">
-        {layoutedNodes.length > 0 && (
+        {nodes.length > 0 && (
           <ReactFlowProvider>
             <LayoutFlow 
-              nodes={layoutedNodes}
-              edges={layoutedEdges}
+              nodes={nodes}
+              edges={edges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               isInvestigating={isInvestigating}

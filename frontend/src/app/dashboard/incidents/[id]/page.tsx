@@ -1,17 +1,50 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Loader2, Lock, ShieldAlert, Zap, Download, Crosshair } from 'lucide-react';
-import { useNodesState, useEdgesState, Node, Edge } from '@xyflow/react';
+import { useNodesState, useEdgesState, Node, Edge, Position } from '@xyflow/react';
+import dagre from 'dagre';
 
 import LeftPane from '@/components/investigation/LeftPane';
 import CenterPane from '@/components/investigation/CenterPane';
 import RightPane from '@/components/investigation/RightPane';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+const nodeWidth = 240;
+const nodeHeight = 90;
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  dagreGraph.setGraph({ rankdir: direction, ranksep: 220, nodesep: 100 });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.targetPosition = direction === 'LR' ? Position.Left : Position.Top;
+    node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2,
+    };
+    return node;
+  });
+
+  return { nodes, edges };
+};
 
 const fetchIncidentDto = async (id: string) => {
   const res = await fetch(`${API_URL}/api/v1/incidents/${id}`);
@@ -51,45 +84,83 @@ export default function InvestigationPage({ params }: { params: Promise<{ id: st
     }
   });
 
+  const replayIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const startReplay = () => {
-    if (!dto?.graph || dto.graph.nodes.length === 0) return;
+    if (!precomputedGraphRef.current || precomputedGraphRef.current.nodes.length === 0) return;
+    
+    if (replayIntervalRef.current) {
+      clearInterval(replayIntervalRef.current);
+    }
+
     setIsInvestigating(true);
     setNodes([]);
     setEdges([]);
     setInvestigationStatus(["Executing deterministic correlation..."]);
     
     let step = 0;
+    const { nodes: graphNodes, edges: graphEdges } = precomputedGraphRef.current;
     
-    const interval = setInterval(() => {
-      const node = dto.graph.nodes[step];
+    replayIntervalRef.current = setInterval(() => {
+      const node = graphNodes[step];
       if (node && node.data?.label) {
         setInvestigationStatus(prev => [...prev, `Mapped: ${node.data.label}`]);
       }
       
-      const progress = step / (dto.graph.nodes.length - 1);
-      const edgesToShow = Math.ceil(progress * dto.graph.edges.length);
+      const currentNodes = graphNodes.slice(0, step + 1);
+      const currentNodeIds = new Set(currentNodes.map((n: any) => n.id));
+      const validEdges = graphEdges.filter((e: any) => currentNodeIds.has(e.source) && currentNodeIds.has(e.target));
       
-      setNodes(dto.graph.nodes.slice(0, step + 1));
-      setEdges(dto.graph.edges.slice(0, edgesToShow));
+      setNodes(currentNodes);
+      setEdges(validEdges);
       
       step++;
-      if (step >= dto.graph.nodes.length) {
-        clearInterval(interval);
-        setIsInvestigating(false);
+      if (step >= graphNodes.length) {
+        if (replayIntervalRef.current) clearInterval(replayIntervalRef.current);
         setInvestigationStatus(prev => [...prev, "Engine halt. Correlation verified."]);
-        setNodes(dto.graph.nodes);
-        setEdges(dto.graph.edges);
+        // The useEffect below will handle setting the final nodes/edges when this becomes false
+        setIsInvestigating(false);
       }
     }, 400);
   };
 
   useEffect(() => {
-    if (dto?.graph && !isInvestigating) {
-      setNodes(dto.graph.nodes);
-      setEdges(dto.graph.edges);
+    return () => {
+      if (replayIntervalRef.current) clearInterval(replayIntervalRef.current);
+    };
+  }, []);
+
+  const precomputedGraphRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+
+  useEffect(() => {
+    if (dto?.graph) {
+      // 1. Format the nodes (assign type and preserve inner data)
+      const formattedNodes = dto.graph.nodes.map((n: any) => ({
+        ...n,
+        type: 'custom',
+        data: { ...n.data, type: n.data?.type || n.type }
+      }));
+
+      // 2. Precompute Dagre layout positions
+      const layouted = getLayoutedElements(formattedNodes, dto.graph.edges);
+      precomputedGraphRef.current = layouted;
+
+      if (!isInvestigating) {
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dto, isInvestigating]);
+  }, [dto]);
+
+  // Handle final state when investigating completes
+  useEffect(() => {
+    if (precomputedGraphRef.current && !isInvestigating) {
+      setNodes(precomputedGraphRef.current.nodes);
+      setEdges(precomputedGraphRef.current.edges);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInvestigating]);
 
   useEffect(() => {
     if (isDemo && dto?.graph) {

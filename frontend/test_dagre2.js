@@ -1,0 +1,11 @@
+import dagre from 'dagre';
+import json from './latest_incident.json' assert { type: "json" };
+const nodes = json.data.graph.nodes;
+const edges = json.data.graph.edges;
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+dagreGraph.setGraph({ rankdir: 'LR', ranksep: 220, nodesep: 100 });
+nodes.forEach(n => dagreGraph.setNode(n.id, { width: 240, height: 90 }));
+edges.forEach(e => dagreGraph.setEdge(e.source, e.target));
+dagre.layout(dagreGraph);
+nodes.forEach(n => console.log(n.id, dagreGraph.node(n.id).x, dagreGraph.node(n.id).y));

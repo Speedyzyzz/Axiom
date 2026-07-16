@@ -4,112 +4,113 @@ import uuid
 import re
 
 def build_attack_graph(incident_id: int, events: List[Event]) -> Tuple[List[GraphNode], List[GraphEdge]]:
+    
+    NOISE = ["svchost", "dns", "system idle", "conhost", "telegraf", "allowed"]
+    ATTACK_KEYWORDS = ["powershell", "cmd", "mimikatz", "lsass", "rdp", "smb", "psexec", "wmi", "vssadmin", "ransomware", "login", "auth", "exfil", "upload", "download", "database access", "lateral movement", "privilege escalation", "external connection"]
+
+    filtered_events = []
+    for e in events:
+        # Strictly ignore noise unless it's explicitly malicious
+        text = f"{e.event_type} {e.action} {e.process_name} {e.user_account}".lower()
+        
+        if e.severity in ["CRITICAL", "HIGH"] and not any(n in text for n in NOISE):
+            filtered_events.append(e)
+            continue
+            
+        if any(k in text for k in ATTACK_KEYWORDS) and not any(n in text for n in NOISE):
+            filtered_events.append(e)
+            continue
+            
+    # If the filter was too aggressive, fallback to original logic
+    if len(filtered_events) < 3:
+        filtered_events = [e for e in events if e.severity in ["HIGH", "CRITICAL"] or e.mitre_technique_id or "exfil" in (e.action or "").lower() or "login" in (e.action or "").lower()]
+        filtered_events = filtered_events if filtered_events else events[:10]
+        
+    events = sorted(filtered_events, key=lambda x: x.timestamp)
+    
     nodes = []
     edges = []
-    
-    # Track node IDs by key to avoid duplicates
     node_map = {}
     
-    def add_node(key: str, label: str, ntype: str, status: str):
-        if key not in node_map:
+    last_node_id = None
+    
+    def add_node_chain(label: str, ntype: str, status: str, edge_label: str):
+        nonlocal last_node_id
+        
+        if label in node_map:
+            node_id = node_map[label]
+        else:
             node_id = str(uuid.uuid4())
             nodes.append(GraphNode(
-                id=node_id,
-                incident_id=incident_id,
-                label=label,
-                type=ntype,
-                status=status
+                id=node_id, incident_id=incident_id, label=label, type=ntype, status=status
             ))
-            node_map[key] = node_id
-        return node_map[key]
-
-    def extract_relationship(event_type: str, action: str) -> str:
-        """Heuristics to convert event descriptions into relationship verbs."""
-        text = f"{event_type.lower()} {action.lower()}"
-        if "login" in text or "auth" in text: return "logged into"
-        if "access" in text: return "accessed"
-        if "execute" in text or "process" in text or "run" in text: return "executed"
-        if "download" in text or "upload" in text or "exfil" in text or "transfer" in text: return "transferred"
-        if "connect" in text or "beacon" in text: return "connected to"
-        if "escalat" in text or "privilege" in text: return "escalated to"
-        if "encrypt" in text or "delete" in text or "modif" in text: return "modified"
-        if "scan" in text or "discover" in text or "enum" in text: return "scanned"
-        return "interacted with"
+            node_map[label] = node_id
+            
+        if last_node_id and last_node_id != node_id:
+            # Avoid duplicate consecutive edges
+            if not any(e.source_node_id == last_node_id and e.target_node_id == node_id for e in edges):
+                edges.append(GraphEdge(
+                    id=str(uuid.uuid4()), incident_id=incident_id,
+                    source_node_id=last_node_id, target_node_id=node_id, label=edge_label
+                ))
+                
+        last_node_id = node_id
+        return node_id
 
     for event in events:
         is_malicious = event.severity in ["CRITICAL", "HIGH"]
         status = "malicious" if is_malicious else "suspicious"
         
-        # 1. Attacker / IP Entity
-        ip_node_id = None
-        if event.source_ip:
-            is_external = "." in event.source_ip and not event.source_ip.startswith("10.") and not event.source_ip.startswith("192.168.")
-            node_type = "attacker" if is_external else "host"
-            label = f"Attacker ({event.source_ip})" if is_external else event.source_ip
-            ip_node_id = add_node(f"ip_{event.source_ip}", label, node_type, status)
-            
-        # 2. User Entity
-        user_node_id = None
-        if event.user_account and event.user_account != "Anonymous":
-            user_node_id = add_node(f"user_{event.user_account}", event.user_account, "user", status)
-            
-        # 3. Target Asset / Process Entity
-        # We try to extract what the action was targeting from the event.
-        target_node_id = None
-        action_lower = event.action.lower()
+        action_lower = (event.action or "").lower()
+        event_type = (event.event_type or "").lower()
         
-        if "database" in event.event_type.lower() or "sql" in action_lower:
-            target_node_id = add_node(f"db_{incident_id}", "Database Server", "database", status)
-        elif ".exe" in action_lower or "process" in event.event_type.lower():
-            # Try to extract process name
+        # Determine the primary entity of this event to advance the chain
+        if "external connection" in action_lower:
+            is_ext = "." in (event.source_ip or "") and not (event.source_ip or "").startswith("10.")
+            add_node_chain(f"External IP {event.source_ip}", "attacker", status, "established connection to")
+            if event.user_account:
+                add_node_chain(f"Host ({event.user_account})", "host", status, "compromised")
+                
+        elif "privilege escalation" in action_lower:
+            if event.user_account:
+                add_node_chain(f"User ({event.user_account})", "user", status, "escalated privileges")
+                
+        elif event.source_ip and ("login" in action_lower or "auth" in action_lower):
+            is_ext = "." in event.source_ip and not event.source_ip.startswith("10.") and not event.source_ip.startswith("192.168.")
+            add_node_chain(f"Attacker ({event.source_ip})" if is_ext else event.source_ip, "attacker" if is_ext else "host", status, "originated from")
+            if event.user_account:
+                add_node_chain(event.user_account, "user", status, "authenticated as")
+                
+        elif "process" in event_type or ".exe" in action_lower or "powershell" in action_lower or "mimikatz" in action_lower:
             match = re.search(r'([a-zA-Z0-9_\-\.]+\.exe)', action_lower)
             proc = match.group(1) if match else "Malicious Process"
-            target_node_id = add_node(f"proc_{proc}", proc, "process", status)
-        elif "cloud" in action_lower or "dropbox" in action_lower or "domain" in action_lower or "url" in action_lower:
-            target_node_id = add_node(f"ext_{incident_id}", "External Infrastructure", "external", status)
-        elif "file" in event.event_type.lower() or "zip" in action_lower or "repo" in action_lower:
-            target_node_id = add_node(f"data_{incident_id}", "Sensitive Data", "data", status)
-        
-        # 4. MITRE Entity
-        mitre_node_id = None
-        if event.mitre_technique_id:
+            if "powershell" in action_lower: proc = "powershell.exe"
+            if "mimi" in action_lower: proc = "mimikatz"
+            add_node_chain(proc, "process", status, "executed")
+            
+        elif "lateral movement" in action_lower or "smb" in action_lower:
+            add_node_chain("Lateral Movement", "mitre", status, "performed")
+            
+        elif "credential dumping" in action_lower or "lsass" in action_lower:
+            add_node_chain("Credential Dumping", "mitre", status, "performed")
+            
+        elif "database" in event_type or "sql" in action_lower or "database access" in action_lower:
+            add_node_chain("Database Server", "database", status, "accessed")
+            
+        elif "file" in event_type or "zip" in action_lower or "repo" in action_lower or "exfil" in action_lower:
+            add_node_chain("Data Exfiltration", "data", status, "attempted")
+            
+        elif event.mitre_technique_id:
             label = f"{event.mitre_technique_id}: {event.mitre_tactic}"
-            mitre_node_id = add_node(f"mitre_{event.mitre_technique_id}", label, "mitre", status)
+            add_node_chain(label, "mitre", status, "performed")
+            
+        else:
+            if event.process_name:
+                add_node_chain(event.process_name, "process", status, "executed")
+            elif event.destination_ip:
+                add_node_chain(event.destination_ip, "host", status, "connected to")
+            elif event.user_account:
+                add_node_chain(event.user_account, "user", status, "interacted as")
 
-        # 5. Build Relationships (Edges)
-        relationship = extract_relationship(event.event_type, event.action)
-        
-        # IP -> User
-        if ip_node_id and user_node_id:
-            edges.append(GraphEdge(
-                id=str(uuid.uuid4()), incident_id=incident_id,
-                source_node_id=ip_node_id, target_node_id=user_node_id, label="authenticated as"
-            ))
-            
-        # User -> Target OR IP -> Target
-        source = user_node_id if user_node_id else ip_node_id
-        if source and target_node_id:
-            edges.append(GraphEdge(
-                id=str(uuid.uuid4()), incident_id=incident_id,
-                source_node_id=source, target_node_id=target_node_id, label=relationship
-            ))
-            
-        # Target -> MITRE OR User -> MITRE
-        if mitre_node_id:
-            mapping_source = target_node_id if target_node_id else source
-            if mapping_source:
-                edges.append(GraphEdge(
-                    id=str(uuid.uuid4()), incident_id=incident_id,
-                    source_node_id=mapping_source, target_node_id=mitre_node_id, label="mapped to"
-                ))
-            
-    # Deduplicate edges conceptually
-    unique_edges = []
-    seen_edges = set()
-    for e in edges:
-        key = f"{e.source_node_id}-{e.target_node_id}-{e.label}"
-        if key not in seen_edges:
-            seen_edges.add(key)
-            unique_edges.append(e)
-            
-    return nodes, unique_edges
+    return nodes, edges
+
