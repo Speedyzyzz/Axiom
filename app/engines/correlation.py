@@ -11,7 +11,7 @@ def build_attack_graph(incident_id: int, events: List[Event]) -> Tuple[List[Grap
     filtered_events = []
     for e in events:
         # Strictly ignore noise unless it's explicitly malicious
-        text = f"{e.event_type} {e.action} {e.process_name} {e.user_account}".lower()
+        text = f"{e.event_type} {e.action} {e.user_account}".lower()
         
         if e.severity in ["CRITICAL", "HIGH"] and not any(n in text for n in NOISE):
             filtered_events.append(e)
@@ -105,10 +105,10 @@ def build_attack_graph(incident_id: int, events: List[Event]) -> Tuple[List[Grap
             add_node_chain(label, "mitre", status, "performed")
             
         else:
-            if event.process_name:
-                add_node_chain(event.process_name, "process", status, "executed")
-            elif event.destination_ip:
-                add_node_chain(event.destination_ip, "host", status, "connected to")
+            if "process" in event_type:
+                add_node_chain("Unknown Process", "process", status, "executed")
+            elif event.source_ip:
+                add_node_chain(event.source_ip, "host", status, "connected to")
             elif event.user_account:
                 add_node_chain(event.user_account, "user", status, "interacted as")
 

@@ -16,9 +16,7 @@ for r in raw:
         event_type=r.get("sourcetype") or "unknown",
         action=r.get("action") or r.get("EventCode") or "unknown",
         source_ip=r.get("src_ip"),
-        destination_ip=r.get("dest_ip"),
         user_account=r.get("user") or r.get("Account_Name"),
-        process_name=r.get("process"),
         severity=severity,
         mitre_tactic="Execution",
         mitre_technique_id="T1059"
