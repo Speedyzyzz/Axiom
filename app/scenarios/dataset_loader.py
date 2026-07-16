@@ -7,7 +7,7 @@ from app.scenarios.base import BaseScenario
 
 class RealDatasetScenario(BaseScenario):
     def generate(self) -> Dict[str, Any]:
-        dataset_path = os.path.join(os.path.dirname(__file__), '../../data/splunk_bots_sample.json')
+        dataset_path = os.path.join(os.path.dirname(__file__), '../../data/splunk_bots_official_subset.json')
         
         try:
             with open(dataset_path, 'r') as f:
@@ -25,12 +25,16 @@ class RealDatasetScenario(BaseScenario):
 
         for log in raw_logs:
             # Extract standard fields
-            timestamp = log.get("_time", datetime.now().isoformat())
-            if timestamp.endswith("Z"):
-                timestamp = timestamp.replace("Z", "+00:00")
+            timestamp_str = log.get("_time", datetime.now().isoformat())
+            try:
+                # Convert "2016-08-10 14:10:05.000 MDT" to a standard datetime. Using a simple parse.
+                dt_str = timestamp_str.split(" ")[0] + "T" + timestamp_str.split(" ")[1]
+                timestamp = datetime.fromisoformat(dt_str)
+            except Exception:
+                timestamp = datetime.now()
             
             src_ip = log.get("src_ip", "")
-            user = log.get("user", "")
+            user = log.get("user") or log.get("User") or ""
             if user == "UNKNOWN":
                 user = ""
                 
@@ -45,13 +49,10 @@ class RealDatasetScenario(BaseScenario):
             mitre_tactic = None
             
             # Map based on specific telemetry signatures
-            if "VPN" in msg:
-                event_type = "VPN Access"
-                mitre_id = "T1078"
-                mitre_tactic = "Initial Access"
-                severity = "MEDIUM"
+            if sourcetype == "fgt_traffic":
+                event_type = "Network Access"
+                action = f"Connection to {log.get('dest_ip', 'Internal')}"
                 if src_ip: malicious_ips.add(src_ip)
-                if user: compromised_users.add(user)
                 
             elif log.get("EventCode") == "4624":
                 event_type = "Authentication"
@@ -59,31 +60,32 @@ class RealDatasetScenario(BaseScenario):
                 
             elif "Sysmon" in sourcetype:
                 event_type = "Process Execution"
-                action = f"Executed {log.get('Image', log.get('TargetImage', ''))}"
-                if "powershell" in log.get("CommandLine", "").lower():
+                image = log.get("Image", "")
+                cmd = log.get("CommandLine", "")
+                
+                action = f"Executed {os.path.basename(image)}" if image else "Process Execution"
+                
+                if "powershell" in cmd.lower():
                     mitre_id = "T1059.001"
                     mitre_tactic = "Execution"
                     severity = "HIGH"
-                if "lsass" in log.get("TargetImage", "").lower():
+                elif "mimi" in cmd.lower():
+                    mitre_id = "T1003"
+                    mitre_tactic = "Credential Access"
+                    severity = "CRITICAL"
+                elif "cerber" in cmd.lower() or "vssadmin" in cmd.lower():
+                    mitre_id = "T1486"
+                    mitre_tactic = "Impact"
+                    severity = "CRITICAL"
+                    
+                if log.get("EventCode") == "10":
+                    action = "Memory Access (LSASS)"
                     mitre_id = "T1003.001"
                     mitre_tactic = "Credential Access"
                     severity = "CRITICAL"
-                    
-            elif "Exfiltration" in msg or log.get("bytes_out"):
-                event_type = "Exfiltration"
-                mitre_id = "T1048"
-                mitre_tactic = "Exfiltration"
-                severity = "CRITICAL"
-                
-            elif "Database" in msg or "tds" in sourcetype:
-                event_type = "Database Access"
-                mitre_id = "T1046"
-                mitre_tactic = "Collection"
-                severity = "HIGH"
-                if src_ip: malicious_ips.add(src_ip)
             
             events.append({
-                "timestamp": datetime.fromisoformat(timestamp),
+                "timestamp": timestamp,
                 "source_ip": src_ip,
                 "user_account": user,
                 "event_type": event_type,
@@ -112,7 +114,7 @@ class RealDatasetScenario(BaseScenario):
         })
 
         return {
-            "title": "Dataset Recon & Exfiltration (Splunk BOTS)",
+            "title": "Wayne Enterprises Cerber Ransomware (Splunk BOTS v1)",
             "events": events,
             "evidence": evidence,
             "iocs": iocs,

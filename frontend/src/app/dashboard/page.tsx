@@ -21,7 +21,7 @@ const fetchDashboardStats = async () => {
   const res = await fetch(`${API_URL}/api/v1/dashboard`);
   if (!res.ok) throw new Error("Failed to fetch dashboard stats");
   const json = await res.json();
-  return json.data.kpis;
+  return json.data.stats;
 };
 
 const fetchMitreCoverage = async () => {
